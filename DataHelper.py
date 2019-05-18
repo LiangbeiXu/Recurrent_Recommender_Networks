@@ -1,7 +1,11 @@
 # -*- Encoding:UTF-8 -*-
 
 import pandas as pd
-
+import numpy as np
+import sys
+import pickle
+sys.path.insert(0, '/home/lxu/Documents/Probabilistic-Matrix-Factorization')
+from  PreprocessAssistment import PreprocessAssistmentSkillBuilder, PreprocessAssistmentProblemSkill
 
 class Data:
     def __init__(self, name='ml-1m'):
@@ -12,6 +16,7 @@ class Data:
         self.MovieInfo = self.getMovieInfo()
 
         self.data = self.getData()
+
 
     def getUserInfo(self):
         if self.dataName == "ml-1m":
@@ -55,12 +60,51 @@ class Data:
 
             ratings_title = ['UserID', 'MovieID', 'Rating', 'TimeStamp']
             ratings = pd.read_table(dataPath, sep='::', header=None, names=ratings_title, engine='python')
-
+            rating = ratings.Rating
+            rating[rating < 2.5] = 0
+            rating[rating > 2.5] = 1
+            # rating = rating.astype('bool')
+            ratings.Rating = rating
             data = pd.merge(pd.merge(ratings, self.UserInfo), self.MovieInfo)
             data = data.sort_values(by=['TimeStamp'])
 
             return data
 
+class AssistmentData:
+    def __init__(self, name = 'Assistment-15', dataPath = '/home/lxu/Documents/StudentLearningProcess/', item = 'skill'):
+        self.dataName = name
+        self.dataPath = dataPath
+        self.item =  item
+        self.data = self.getData()
+        self.user_num = len(np.unique(self.data.user_id))
+        if self.dataName == 'Assistment-15':
+            self.item_num = len(np.unique(self.data.skill_id))
+        elif self.dataName == 'Assistment-09':
+            if self.item == 'skill':
+                self.item_num = len(np.unique(self.data.skill_id))
+            elif self.item == 'problem':
+                self.item_num = len(np.unique(self.data.problem_id))
+
+    def getData(self):
+        if self.dataName == 'Assistment-15':
+            dataPath = self.dataPath + 'Assistment15-skill.pickle'
+            pickle_in = open(dataPath, 'rb')
+            data = pickle.load(pickle_in)
+            return data[['user_id','skill_id', 'correct']]
+        if self.dataName == 'Assistment-09':
+            if self.item=='skill':
+                dataPath = self.dataPath + 'Assistment09-skill.pickle'
+            elif self.item=='problem':
+                dataPath = self.dataPath + 'Assistment09-problem.pickle'
+
+            pickle_in = open(dataPath, 'rb')
+            data = pickle.load(pickle_in)
+            # data.drop(columns=['skill_ids'], inplace=True)
+            # data.rename(index=str, columns={"problem_id": "skill_id"})
+            if self.item=='skill':
+                return data[['user_id','skill_id', 'correct']]
+            elif self.item=='problem':
+                return data[['user_id','problem_id', 'correct']]
 
 if __name__ == '__main__':
     data = Data()

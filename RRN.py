@@ -3,25 +3,80 @@
 import tensorflow as tf
 import numpy as np
 import sys
-from DataHelper import Data
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from DataHelper import Data, AssistmentData
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def main():
-    model = RRN()
+    model = RRN(data_name='Assistment-09', item='skill', epochs = 3)
     model.run()
+    auc = model.predict()
+    print("evaluation","auc:", auc)
 
+    plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
+    plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
+    plt.xlabel('Number of Batches')
+    plt.ylabel('RMSE')
+    plt.legend()
+    plt.grid()
+    plt.show()
+    
+    model = None
+
+    model = RRN(data_name='Assistment-09', item='problem', epochs = 3)
+    model.run()
+    auc = model.predict()
+    print("evaluation","auc:", auc)
+    plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
+    plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
+    plt.xlabel('Number of Batches')
+    plt.ylabel('RMSE')
+    plt.legend()
+    plt.grid()
+    plt.show()
+    # tf.reset_default_graph()
+    model = None
+
+    model = RRN(data_name='Assistment-15', item='skill', epochs = 3)
+    model.run()
+    auc = model.predict()
+    print( "evaluation","auc:", auc)
+    plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
+    plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
+    plt.xlabel('Number of Batches')
+    plt.ylabel('RMSE')
+    plt.legend()
+    plt.grid()
+    plt.show()
 
 class RRN:
-    def __init__(self):
+
+    def __init__(self, data_name='Assistment-09', item='problem', epochs = 1):
         # params parser
-        self.batch_size = 50
+        self.batch_size = 200
         self.n_step = 1
-        self.lr = 0.01
+        self.lr = 0.001
         self.verbose = 10
+        self.epochs = epochs
+        self.train_loss = []
+        self.train_loss_epoch = []
+        self.val_loss = []
+        self.val_loss_epoch = []
         # Data
-        dataSet = Data("ml-1m")
-        self.train = dataSet.data.values
+        dataSet = AssistmentData(name=data_name, item=item)
+        data = dataSet.data.values
+        #self.train, self.validation = train_test_split(data, test_size = 0.01)
+        self.user_num = dataSet.user_num
+        self.item_num = dataSet.item_num
+        print('number of users:',self.user_num, ', num of items:', self.item_num)
+        self.train = data[0:-20000,:]
+        self.validation = data[-20000:,:]
+        print('train size:', self.train.shape[0], 'validation size', self.validation.shape[0])
         # Model
+        tf.reset_default_graph()
         self.add_placeholder()
         self.add_embedding_layer()
         self.add_rnn_layer()
@@ -29,6 +84,8 @@ class RRN:
         self.add_loss()
         self.add_train_step()
         self.init_session()
+
+
 
     def add_placeholder(self):
         # user placeholder
@@ -43,14 +100,14 @@ class RRN:
     def add_embedding_layer(self):
         with tf.name_scope("userID_embedding"):
             # user id embedding
-            uid_onehot = tf.reshape(tf.one_hot(self.userID, 6040), shape=[-1, 6040])
+            uid_onehot = tf.reshape(tf.one_hot(self.userID, self.user_num), shape=[-1, self.user_num])
             # uid_onehot_rating = tf.multiply(self.rating, uid_onehot)
             uid_layer = tf.layers.dense(uid_onehot, units=128, activation=tf.nn.relu)
             self.uid_layer = tf.reshape(uid_layer, [-1, self.n_step, 128])
 
         with tf.name_scope("movie_embedding"):
             # movie id embedding
-            mid_onehot = tf.reshape(tf.one_hot(self.movieID, 3952), shape=[-1, 3952])
+            mid_onehot = tf.reshape(tf.one_hot(self.movieID, self.item_num), shape=[-1, self.item_num])
             # mid_onehot_rating = tf.multiply(self.rating, mid_onehot)
             mid_layer = tf.layers.dense(mid_onehot, units=128, activation=tf.nn.relu)
             self.mid_layer = tf.reshape(mid_layer, shape=[-1, self.n_step, 128])
@@ -84,10 +141,10 @@ class RRN:
         userVector = tf.add(tf.matmul(self.userOutput, W['userOutput']), b['userOutput'])
         movieVector = tf.add(tf.matmul(self.movieOutput, W['movieOutput']), b['movieOutput'])
 
-        self.pred = tf.reduce_sum(tf.multiply(userVector, movieVector), axis=1, keep_dims=True)
+        self.pred = tf.sigmoid(tf.reduce_sum(tf.multiply(userVector, movieVector), axis=1, keep_dims=True))
 
     def add_loss(self):
-        losses = tf.losses.mean_squared_error(self.rating, self.pred)
+        losses = tf.losses.log_loss(self.rating, self.pred)
         self.loss = tf.reduce_mean(losses)
 
     def add_train_step(self):
@@ -108,25 +165,35 @@ class RRN:
         # shuffled_idx = np.random.permutation(np.arange(len(self.train)))
         # self.train = self.train[shuffled_idx]
 
-        train_loss = []
-        for i in range(batches):
-            minIdx = i * self.batch_size
-            maxIdx = min(length, (i+1)*self.batch_size)
-            train_batch = self.train[minIdx:maxIdx]
-            feed_dict = self.createFeedDict(train_batch)
 
-            tmpLoss = self.sess.run(self.loss, feed_dict=feed_dict)
-            train_loss.append(tmpLoss)
+        for ii in range(self.epochs):
+            for i in range(batches):
+                minIdx = i * self.batch_size
+                maxIdx = min(length, (i+1)*self.batch_size)
+                train_batch = self.train[minIdx:maxIdx]
+                feed_dict = self.createFeedDict(train_batch)
 
-            self.sess.run(self.train_op, feed_dict=feed_dict)
+                tmpLoss = self.sess.run(self.loss, feed_dict=feed_dict)
+                self.train_loss.append(tmpLoss)
+                self.train_loss_epoch.append((ii)*batches + i)
+                self.sess.run(self.train_op, feed_dict=feed_dict)
 
-            if self.verbose and i % self.verbose == 0:
-                sys.stdout.write('\r{} / {}： loss = {}'.format(
-                    i, batches, np.sqrt(np.mean(train_loss[-20:]))
-                ))
-                sys.stdout.flush()
+                if self.verbose and i % (self.verbose * 10) == 0:
+                    val_auc = self.predict()
+                    self.val_loss_epoch.append((ii)*batches + i)
+                    self.val_loss.append(val_auc)
+                    sys.stdout.write('\r{} / {}： val auc = {}'.format(
+                        i, batches, val_auc
+                    ))
+                    sys.stdout.flush()
+
+                #if self.verbose and i % self.verbose == 0:
+                #    sys.stdout.write('\r{} / {}： loss = {}'.format(
+                #        i, batches, np.sqrt(np.mean(train_loss[-20:]))
+                #    ))
+                #    sys.stdout.flush()
         print("Training Finish, Last 2000 batches loss is {}.".format(
-            np.sqrt(np.mean(train_loss[-2000:]))
+            np.sqrt(np.mean(self.train_loss[-2000:]))
         ))
 
     def createFeedDict(self, data, dropout=1.):
@@ -144,6 +211,15 @@ class RRN:
             self.dropout: dropout
         }
 
+    def predict(self):
+        feed_dict = self.createFeedDict(self.validation)
+        p = self.sess.run(self.pred, feed_dict=feed_dict)
+        dt = pd.DataFrame({'act': self.validation[:,2], 'pred': p.reshape(-1)})
+        auc = roc_auc_score(np.array(self.validation[:,2], dtype=bool), p.reshape(-1))
+        return auc
+        # print(dt[:5])
+        # print("evaluation")
+        # print("auc:", auc)
 
 if __name__ == '__main__':
     main()
