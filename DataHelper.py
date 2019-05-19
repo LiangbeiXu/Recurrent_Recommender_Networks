@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import sys
 import pickle
-sys.path.insert(0, '/home/lxu/Documents/Probabilistic-Matrix-Factorization')
-from  PreprocessAssistment import PreprocessAssistmentSkillBuilder, PreprocessAssistmentProblemSkill
+# sys.path.insert(0, '/home/lxu/Documents/Probabilistic-Matrix-Factorization')
+# from  PreprocessAssistment import PreprocessAssistmentSkillBuilder, PreprocessAssistmentProblemSkill
 
 class Data:
     def __init__(self, name='ml-1m'):

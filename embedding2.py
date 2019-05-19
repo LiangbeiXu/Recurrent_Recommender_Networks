@@ -19,16 +19,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 import time
 import pickle
+from multiprocessing import Pool
+# sys.path.insert(0, '/home/lxu/Documents/Probabilistic-Matrix-Factorization')
 
-sys.path.insert(0, '/home/lxu/Documents/Probabilistic-Matrix-Factorization')
-from  PreprocessAssistment import PreprocessAssistmentSkillBuilder, PreprocessAssistmentProblemSkill
-from PreprocessAssistment import *
-from IRT import IRT
 
 
 def main():
 
     data_names = ['Assistment-09', 'Assistment-15']
+    data_names = [ 'Assistment-15']
     item_names = ['problem', 'skill']
 
     for data_name in data_names:
@@ -63,16 +62,26 @@ def main():
                     'learning_rate': [  1e-3 ]
                 }
                 space = {
-                    'embedding_size': [4, 8, 16, 32],
-                    'batch_size' : [256, 512],
-                    'nb_epochs' :  [8, 16, 32],
+                    'embedding_size': [16, 32],
+                    'batch_size' : [512],
+                    'nb_epochs' :  [64],
                     'regularization': [ 0.0003,0.001, 0.003],
-                    'learning_rate': [ 1e-4, 1e-3, 2e-3]
+                    'learning_rate': [ 1e-4, 3e-4, 1e-3, 2e-3]
+                }
+                space = {
+                    'embedding_size': hp.choice('embedding_size', [ 16, 32]),
+                    'batch_size' : hp.choice('batch_size', [512]),
+
+                    'nb_epochs' :  hp.choice('nb_epochs', [64]),
+                    # 'regularization': hp.choice('regularization',[ 0.0003,0.001, 0.003]),
+                    'regularization': hp.choice('regularization',[ 0.001]),
+                    'learning_rate': hp.choice('learning_rate',[1e-3, 3e-3])
+
                 }
 
                 print('Searching: '+ data_name + '_' + item)
                 # run_a_trial(data_name, item, space)
-                grid_search_models(data_name, item, space)
+                grid_search_models(data_name, item, space, parallel_mode=True)
 
     # params = {'embedding_size':16, 'batch_size':512, 'nb_epochs': 16,'regularization':0.001, 'learning_rate': 1e-4}
     # data_name='Assistment-15'
@@ -80,19 +89,33 @@ def main():
     # ran_one_model(data_name, item, params)
 
 
-def grid_search_models(data_name, item, search_space):
+def grid_search_models(data_name, item, search_space, parallel_mode):
     keys, values = zip(*search_space.items())
     experiments = [dict(zip(keys, v)) for v in itertools.product(*values)]
     print('Number of models: ', len(experiments))
-    auc_val_all = []
-    for exp in experiments:
-        auc_train, auc_val = run_one_model(data_name,item, exp,'Searching')
-        auc_val_all.append(auc_val)
-    best_idx = auc_val_all.index(max(auc_val_all))
+
+    args = [None] * np.size(data_name,0)
+    if parallel_mode:
+        for idx, exp in experiments:
+            args[idx]  = [data_name, item, exp, 'Searching']
+        pool = Pool(4)
+        results = pool.map(run_one_model_wrapper, args)
+        print(results)
+    else:
+        auc_val_all = []
+        for exp in experiments:
+            auc_train, auc_val = run_one_model(data_name,item, exp,'Searching')
+            auc_val_all.append(auc_val)
+        best_idx = auc_val_all.index(max(auc_val_all))
     print('Best model for '+ data_name + '_' + item)
     print(experiments[best_idx])
     auc_train, auc_val = run_one_model(data_name, item, experiments[best_idx], 'Testing')
     print('auc_train:', auc_train, 'auc_val', auc_val)
+
+
+def run_one_model_wrapper(args):
+    data_name, item, params, mode = args
+    return run_one_model(data_name, item, params, mode)
 
 
 def run_one_model(data_name, item, params, mode):
@@ -263,7 +286,7 @@ class embedding:
     def train_model(self):
         if 1:
             tensorboard = TensorBoard(log_dir="logs/{}".format(self.model_name))
-            es = EarlyStopping(monitor='val_loss', mode='min', verbose=self.verbose, patience=50)
+            es = EarlyStopping(monitor='val_loss', mode='min', verbose=self.verbose, patience=5, min_delta=1e-3)
             mc = ModelCheckpoint('best_model.h5', monitor='val_loss', mode='min', save_best_only=True)
             logger = CSVLogger(filename="logs/{}".format(self.data_name + '-' + self.item + '' + self.model_name),append=False)
             h = self.embedding_model.fit(x=[self.train[:,0], self.train[:,1]],
