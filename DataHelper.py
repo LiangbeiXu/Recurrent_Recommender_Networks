@@ -71,27 +71,27 @@ class Data:
             return data
 
 class AssistmentData:
-    def __init__(self, name = 'Assistment-15', dataPath = '/home/lxu/Documents/StudentLearningProcess/', item = 'skill'):
+    def __init__(self, name = 'Assistment15', dataPath = '/home/lxu/Documents/StudentLearningProcess/', item = 'skill'):
         self.dataName = name
         self.dataPath = dataPath
         self.item =  item
-        self.data = self.getData()
+        self.data = self.getDataCSV()
         self.user_num = len(np.unique(self.data.user_id))
-        if self.dataName == 'Assistment-15':
+        if self.dataName == 'Assistment15':
             self.item_num = len(np.unique(self.data.skill_id))
-        elif self.dataName == 'Assistment-09':
+        elif self.dataName == 'Assistment09':
             if self.item == 'skill':
                 self.item_num = len(np.unique(self.data.skill_id))
             elif self.item == 'problem':
                 self.item_num = len(np.unique(self.data.problem_id))
 
     def getData(self):
-        if self.dataName == 'Assistment-15':
+        if self.dataName == 'Assistment15':
             dataPath = self.dataPath + 'Assistment15-skill.pickle'
             pickle_in = open(dataPath, 'rb')
             data = pickle.load(pickle_in)
             return data[['user_id','skill_id', 'correct']]
-        if self.dataName == 'Assistment-09':
+        if self.dataName == 'Assistment09':
             if self.item=='skill':
                 dataPath = self.dataPath + 'Assistment09-skill.pickle'
             elif self.item=='problem':
@@ -105,6 +105,13 @@ class AssistmentData:
                 return data[['user_id','skill_id', 'correct']]
             elif self.item=='problem':
                 return data[['user_id','problem_id', 'correct']]
+
+
+    def getDataCSV(self):
+        dataPath = self.dataPath + self.dataName + '-' + self.item + '.csv'
+        data = pd.read_csv(dataPath)
+        return data[['user_id', self.item +'_id', 'correct']]
+        print('Load data succefully!')
 
 if __name__ == '__main__':
     data = Data()

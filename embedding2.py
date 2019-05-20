@@ -26,8 +26,8 @@ from multiprocessing import Pool
 
 def main():
 
-    data_names = ['Assistment-09', 'Assistment-15']
-    data_names = [ 'Assistment-15']
+    data_names = ['Assistment09', 'Assistment15']
+    data_names = [ 'Assistment15']
     item_names = ['problem', 'skill']
 
     for data_name in data_names:
@@ -79,14 +79,20 @@ def main():
 
                 }
 
-                print('Searching: '+ data_name + '_' + item)
+                # print('Searching: '+ data_name + '_' + item)
                 # run_a_trial(data_name, item, space)
-                grid_search_models(data_name, item, space, parallel_mode=True)
+                # grid_search_models(data_name, item, space, parallel_mode=True)
 
-    # params = {'embedding_size':16, 'batch_size':512, 'nb_epochs': 16,'regularization':0.001, 'learning_rate': 1e-4}
-    # data_name='Assistment-15'
-    # item='skill'
-    # ran_one_model(data_name, item, params)
+    params = {'embedding_size':16, 'batch_size':512, 'nb_epochs': 4,'regularization':0.001, 'learning_rate': 1e-4}
+    data_name='Assistment09'
+    item='skill'
+    run_one_model(data_name, item, params, 'Testing')
+    data_name='Assistment09'
+    item='problem'
+    run_one_model(data_name, item, params, 'Testing')
+    data_name='Assistment15'
+    item='skill'
+    run_one_model(data_name, item, params, 'Testing')
 
 
 def grid_search_models(data_name, item, search_space, parallel_mode):
