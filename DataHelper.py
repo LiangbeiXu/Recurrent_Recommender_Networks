@@ -71,7 +71,7 @@ class Data:
             return data
 
 class AssistmentData:
-    def __init__(self, name = 'Assistment15', dataPath = '/home/lxu/Documents/StudentLearningProcess/', item = 'skill'):
+    def __init__(self, name = 'Assistment15', dataPath = '../', item = 'skill'):
         self.dataName = name
         self.dataPath = dataPath
         self.item =  item
