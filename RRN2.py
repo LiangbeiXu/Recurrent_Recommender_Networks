@@ -115,12 +115,10 @@ class RRN2:
 
 
     def calculate_embedding(self):
-        fm = IRT(epsilon=4, _lambda=0.1, momentum=0.8, maxepoch=4, num_batches=300, batch_size=1000,\
+        fm = IRT(epsilon=4, _lambda=0.1, momentum=0.8, maxepoch=1, num_batches=300, batch_size=1000,\
                  problem=True, multi_skills=False, user_skill=False, user_prob=False, PFA=False, MF=True, \
                  num_feat=self.item_embedding_dim, MF_skill=False, user=True, skill_dyn_embeddding=False, skill=False, global_bias=False)
 
-        #train_data = pd.DataFrame(data=self.train[:,0:3], columns=['user_id', 'problem_id', 'correct'])
-        #test_data = pd.DataFrame(data=self.validation[:,0:3], columns=['user_id', 'problem_id', 'correct'])
 
         fm.fit(self.train, self.validation, self.user_num, 5, self.item_num)
 
@@ -193,13 +191,13 @@ class RRN2:
             'userOutput': tf.Variable(tf.random_normal(shape=[128], stddev=0.1)),
             'movieOutput': tf.Variable(tf.random_normal(shape=[128], stddev=0.1))
         }
-        userVector = tf.add(tf.matmul(self.userOutput, W['userOutput']), b['userOutput'])
-        # userVector = self.userID2
+        # userVector = tf.add(tf.matmul(self.userOutput, W['userOutput']), b['userOutput'])
+        userVector = self.userID2
         # movieVector = tf.add(tf.matmul(self.movieOutput, W['movieOutput']), b['movieOutput'])
         # userVector = self.uid_layer
         movieVector  = self.movieID
 
-        self.pred = tf.sigmoid(tf.reduce_sum(tf.multiply(userVector, movieVector) + self.global_bias_constant + self.user_bias + self.item_bias, axis=1, keep_dims=True))
+        self.pred = tf.sigmoid(tf.reduce_sum(tf.multiply(userVector, movieVector) + self.user_bias + self.item_bias, axis=1, keep_dims=True))
 
     def add_loss(self):
         losses = tf.losses.log_loss(self.rating, self.pred)
