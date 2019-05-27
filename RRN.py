@@ -11,46 +11,47 @@ import matplotlib.pyplot as plt
 
 
 def main():
-    model = RRN(data_name='Assistment-09', item='skill', epochs = 3)
-    model.run()
-    auc = model.predict()
-    print("evaluation","auc:", auc)
+    if 0:
+        model = RRN(data_name='Assistment09', item='skill', epochs = 3)
+        model.run()
+        auc = model.predict()
+        print("evaluation","auc:", auc)
 
-    plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
-    plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
-    plt.xlabel('Number of Batches')
-    plt.ylabel('RMSE')
-    plt.legend()
-    plt.grid()
-    plt.show()
-    
-    model = None
+        plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
+        plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
+        plt.xlabel('Number of Batches')
+        plt.ylabel('RMSE')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
-    model = RRN(data_name='Assistment-09', item='problem', epochs = 3)
-    model.run()
-    auc = model.predict()
-    print("evaluation","auc:", auc)
-    plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
-    plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
-    plt.xlabel('Number of Batches')
-    plt.ylabel('RMSE')
-    plt.legend()
-    plt.grid()
-    plt.show()
-    # tf.reset_default_graph()
-    model = None
-
-    model = RRN(data_name='Assistment-15', item='skill', epochs = 3)
-    model.run()
-    auc = model.predict()
-    print( "evaluation","auc:", auc)
-    plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
-    plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
-    plt.xlabel('Number of Batches')
-    plt.ylabel('RMSE')
-    plt.legend()
-    plt.grid()
-    plt.show()
+        model = None
+    if 1:
+        model = RRN(data_name='Assistment09', item='problem', epochs = 5)
+        model.run()
+        auc = model.predict()
+        print("evaluation","auc:", auc)
+        plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
+        plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
+        plt.xlabel('Number of Batches')
+        plt.ylabel('RMSE')
+        plt.legend()
+        plt.grid()
+        plt.show()
+        # tf.reset_default_graph()
+        model = None
+    if 0:
+        model = RRN(data_name='Assistment-15', item='skill', epochs = 3)
+        model.run()
+        auc = model.predict()
+        print( "evaluation","auc:", auc)
+        plt.plot(model.train_loss_epoch, model.train_loss, marker='*', label='loss: Train Data')
+        plt.plot(model.val_loss_epoch, model.val_loss, marker='*', label='AUC: Test Data')
+        plt.xlabel('Number of Batches')
+        plt.ylabel('RMSE')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
 class RRN:
 
@@ -58,7 +59,7 @@ class RRN:
         # params parser
         self.batch_size = 200
         self.n_step = 1
-        self.lr = 0.001
+        self.lr = 5e-4
         self.verbose = 10
         self.epochs = epochs
         self.train_loss = []
@@ -114,7 +115,8 @@ class RRN:
 
     def add_rnn_layer(self):
         with tf.variable_scope("user_rnn_cell"):
-            userCell = tf.nn.rnn_cell.GRUCell(num_units=128)
+            userCell = tf.nn.rnn_cell.LSTMCell(num_units=128)
+            # dropout_cell = DropoutWrapper(lstm_cell, input_keep_prob=self.keep_rate, output_keep_prob=self.keep_rate, state_keep_prob=self.keep_rate)
 
             userInput = tf.transpose(self.mid_layer, [1, 0, 2])
             # userInput = tf.reshape(userInput, [-1, 128])
@@ -123,7 +125,7 @@ class RRN:
             userOutputs, userStates = tf.nn.dynamic_rnn(userCell, userInput, dtype=tf.float32)
             self.userOutput = userOutputs[-1]
         with tf.variable_scope("movie_rnn_cell"):
-            movieCell = tf.nn.rnn_cell.GRUCell(num_units=128)
+            movieCell = tf.nn.rnn_cell.LSTMCell(num_units=128)
 
             movieInput = tf.transpose(self.uid_layer, [1, 0, 2])
             movieOutputs, movieStates = tf.nn.dynamic_rnn(movieCell, movieInput, dtype=tf.float32)
