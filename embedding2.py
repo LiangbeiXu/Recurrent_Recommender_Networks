@@ -92,12 +92,12 @@ def main():
                     random_search_models(data_name, item, space)
                     # grid_search_models(data_name, item, space, parallel_mode=True)
 
-    if 1:
+    if 0:
         params = {'embedding_size':32, 'batch_size':512, 'nb_epochs': 5,'regularization':1e-4, 'learning_rate': 3}
         data_name='Assistment09'
         item='problem'
         em, auc_train, auc_test = run_one_model(data_name, item, params, 'Testing')
-    if 0:
+    if 1:
         params = {'embedding_size':32, 'batch_size':512, 'nb_epochs': 5,'regularization':1e-4, 'learning_rate': 3}
         data_name='Assistment09'
         item='problem'
@@ -152,8 +152,6 @@ def main():
             print('user_embedding', fm.w_user[0:10,:])
 
         if 1:
-
-
             item_bias_ones = em.embedding_model.get_layer('item_bias').get_weights()
             for idx, ele in enumerate(item_bias_ones[0]):
                 item_bias_ones[0][idx] = fm.beta_prob[idx]
@@ -541,8 +539,8 @@ class embedding:
                                      batch_size = self.params['batch_size'],
                                      epochs = self.params['nb_epochs'],
                                      validation_data = ([self.validation[:,0],self.validation[:,1]], self.validation[:,2]),
-                                     verbose = self.verbose,
-                                     callbacks=[es])
+                                     verbose = self.verbose
+                                     )
 
 
     def validate_model(self):

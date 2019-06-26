@@ -108,7 +108,8 @@ class AssistmentData:
 
 
     def getDataCSV(self):
-        dataPath = self.dataPath + self.dataName + '-' + self.item + '.csv'
+        dataPath = '../Assistment09-problem-single_skill.csv'
+        # dataPath = self.dataPath + self.dataName + '-' + self.item + '.csv'
         data = pd.read_csv(dataPath)
         return data[['user_id', self.item +'_id', 'correct']]
         print('Load data succefully!')

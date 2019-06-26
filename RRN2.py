@@ -82,7 +82,7 @@ class RRN2:
                 self.train, self.validation = train_test_split(data, test_size = 0.2)
         else:
             validation_size = 20000
-            test_size = 20000
+            test_size = 40000
             if self.mode == 'Searching':
                 self.test = data[-int(test_size):,:]
                 self.train = data[0:-int(test_size+validation_size),:]
@@ -119,10 +119,10 @@ class RRN2:
             fm.fit(self.train, self.validation, self.user_num, 5, self.item_num)
 
         fm = IRT2(epsilon=5, _lambda=0.1, momentum=0.8, maxepoch=200, num_batches=300, batch_size=1000,
-                problem=True, MF=True, num_feat=self.item_embedding_dim, user=True,  global_bias=True,
+                problem=True, MF_prob=True, num_feat=self.item_embedding_dim, user=True,  global_bias=True,
                 problem_dyn_embedding=False)
 
-        fm.fit(self.train, self.validation, self.user_num, self.item_num)
+        fm.fit(self.train, self.validation, self.user_num, self.item_num, 5)
 
 
         # PlotLoss(model, name)
